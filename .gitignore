@@ -1,8 +1,7 @@
 reports/
 
 *.csv
-!sample_cdr.csv
-test_cdr.csv
+sample_cdr.csv
 
 __pycache__/
 *.pyc
