@@ -22,16 +22,209 @@ ODD_HOUR_END_MIN = 5 * 60           # 05:00
 # Different telecom operators export CDRs with different header names.
 # These aliases are normalized onto one internal schema.
 COLUMN_ALIASES = {
-    "calling_number": ["calling_number", "a_party", "caller", "calling_no", "msisdn", "a_number", "source_number", "caller_number"],
-    "called_number": ["called_number", "b_party", "callee", "called_no", "b_number", "destination_number", "called_party"],
-    "date": ["date", "call_date", "start_date"],
-    "time": ["time", "call_time", "start_time"],
-    "datetime": ["datetime", "call_datetime", "start_datetime", "timestamp"],
-    "duration": ["duration", "call_duration", "duration_sec", "duration_seconds"],
-    "call_type": ["call_type", "type", "cdr_type", "service_type"],
-    "tower_id": ["tower_id", "cell_id", "cellid", "site_id", "lac_cell"],
-    "imei": ["imei", "imei_number", "a_party_imei"],
-    "imsi": ["imsi", "imsi_number", "a_party_imsi"],
+    "calling_number": [
+        "calling_number",
+        "calling number",
+        "a_party",
+        "a party",
+        "caller",
+        "calling_no",
+        "calling no",
+        "calling_number",
+        "msisdn",
+        "a_number",
+        "a number",
+        "source_number",
+        "source number",
+        "caller_number",
+        "caller number",
+        "originating_number",
+        "originating number",
+        "originating_party",
+        "originating party",
+        "calling_party",
+        "calling party",
+        "from_number",
+        "from number",
+        "from",
+    ],
+
+    "called_number": [
+        "called_number",
+        "called number",
+        "b_party",
+        "b party",
+        "callee",
+        "called_no",
+        "called no",
+        "b_number",
+        "b number",
+        "destination_number",
+        "destination number",
+        "called_party",
+        "called party",
+        "terminating_number",
+        "terminating number",
+        "terminating_party",
+        "terminating party",
+        "called_msisdn",
+        "called msisdn",
+        "to_number",
+        "to number",
+        "to",
+    ],
+
+    "date": [
+        "date",
+        "call_date",
+        "call date",
+        "start_date",
+        "start date",
+        "call_start_date",
+        "call start date",
+        "event_date",
+        "event date",
+        "transaction_date",
+        "transaction date",
+    ],
+
+    "time": [
+        "time",
+        "call_time",
+        "call time",
+        "start_time",
+        "start time",
+        "call_start_time",
+        "call start time",
+        "event_time",
+        "event time",
+        "transaction_time",
+        "transaction time",
+    ],
+
+    "datetime": [
+        "datetime",
+        "date_time",
+        "date time",
+        "call_datetime",
+        "call datetime",
+        "start_datetime",
+        "start datetime",
+        "call_start_datetime",
+        "call start datetime",
+        "timestamp",
+        "event_datetime",
+        "event datetime",
+        "event_timestamp",
+        "event timestamp",
+    ],
+
+    "duration": [
+        "duration",
+        "call_duration",
+        "call duration",
+        "duration_sec",
+        "duration sec",
+        "duration_seconds",
+        "duration seconds",
+        "duration_in_seconds",
+        "duration in seconds",
+        "talk_time",
+        "talk time",
+        "talktime",
+        "call_length",
+        "call length",
+        "session_duration",
+        "session duration",
+    ],
+
+    "call_type": [
+        "call_type",
+        "call type",
+        "type",
+        "cdr_type",
+        "cdr type",
+        "service_type",
+        "service type",
+        "event_type",
+        "event type",
+        "call_direction",
+        "call direction",
+        "traffic_type",
+        "traffic type",
+    ],
+
+    "tower_id": [
+        "tower_id",
+        "tower id",
+        "tower",
+        "towerid",
+        "tower_no",
+        "tower no",
+        "tower_number",
+        "tower number",
+        "tower_name",
+        "tower name",
+        "cell_id",
+        "cell id",
+        "cellid",
+        "cell",
+        "cell_no",
+        "cell no",
+        "cell_number",
+        "cell number",
+        "cell_name",
+        "cell name",
+        "site_id",
+        "site id",
+        "siteid",
+        "site",
+        "lac_cell",
+        "lac cell",
+        "lac/cell",
+        "lac_cell_id",
+        "lac cell id",
+        "tower_cell_id",
+        "tower cell id",
+        "tower_cell",
+        "tower cell",
+        "tower/cell_id",
+        "tower/cell id",
+        "tower_cell_name",
+        "tower cell name",
+    ],
+
+    "imei": [
+        "imei",
+        "imei_number",
+        "imei number",
+        "a_party_imei",
+        "a party imei",
+        "calling_imei",
+        "calling imei",
+        "caller_imei",
+        "caller imei",
+        "device_imei",
+        "device imei",
+        "handset_imei",
+        "handset imei",
+    ],
+
+    "imsi": [
+        "imsi",
+        "imsi_number",
+        "imsi number",
+        "a_party_imsi",
+        "a party imsi",
+        "calling_imsi",
+        "calling imsi",
+        "caller_imsi",
+        "caller imsi",
+        "subscriber_imsi",
+        "subscriber imsi",
+        "sim_imsi",
+        "sim imsi",
+    ],
 }
 
 
@@ -161,14 +354,37 @@ def calculate_risk(records, contact_count, odd_hour_ratio):
 # CDR PARSER
 # ============================================================
 
+def normalize_header(value):
+    """Normalize CDR column headers for flexible alias matching."""
+    return (
+        str(value)
+        .strip()
+        .lower()
+        .replace("-", "_")
+        .replace("/", "_")
+        .replace(" ", "_")
+    )
+
+
 def normalize_columns(df):
     rename_map = {}
-    lower_cols = {c.lower().strip(): c for c in df.columns}
+
+    normalized_columns = {
+        normalize_header(column): column
+        for column in df.columns
+    }
 
     for standard_name, aliases in COLUMN_ALIASES.items():
-        for alias in aliases:
-            if alias in lower_cols:
-                rename_map[lower_cols[alias]] = standard_name
+
+        normalized_aliases = {
+            normalize_header(alias)
+            for alias in aliases
+        }
+
+        for alias in normalized_aliases:
+            if alias in normalized_columns:
+                original_column = normalized_columns[alias]
+                rename_map[original_column] = standard_name
                 break
 
     return df.rename(columns=rename_map)
